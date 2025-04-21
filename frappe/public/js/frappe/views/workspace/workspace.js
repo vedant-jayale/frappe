@@ -55,6 +55,8 @@ frappe.views.Workspace = class Workspace {
 	}
 
 	prepare_container() {
+		this.page.title_initialized = false;  // Add this line at the start
+
 		let list_sidebar = $(`
 			<div class="list-sidebar overlay-sidebar hidden-xs hidden-sm">
 				<div class="desk-sidebar list-unstyled sidebar-menu"></div>
@@ -63,6 +65,12 @@ frappe.views.Workspace = class Workspace {
 		this.sidebar = list_sidebar.find(".desk-sidebar");
 		this.body = this.wrapper.find(".layout-main-section");
 		this.prepare_new_and_edit();
+
+		// Initialize page title if not already set
+		if (this.page && !this.page.title_initialized) {
+			this.page.set_title(this.workspace_name || __("Workspace"));
+			this.page.title_initialized = true;
+		}
 	}
 
 	async setup_pages(reload) {
@@ -90,6 +98,13 @@ frappe.views.Workspace = class Workspace {
 				};
 			}
 			this.make_sidebar();
+
+			// Ensure page title is set
+			if (this.page && !this.page.title_initialized) {
+				this.page.set_title(this.workspace_name || __("Workspace"));
+				this.page.title_initialized = true;
+			}
+
 			reload && this.show();
 		}
 	}
@@ -310,10 +325,8 @@ frappe.views.Workspace = class Workspace {
 			$child_item_section.toggleClass("hidden");
 		});
 	}
-
 	show() {
 		if (!this.all_pages) {
-			// pages not yet loaded, call again after a bit
 			setTimeout(() => this.show(), 100);
 			return;
 		}
@@ -326,12 +339,15 @@ frappe.views.Workspace = class Workspace {
 			return;
 		}
 
-		this.page.set_title(__(page.name));
-		this.update_selected_sidebar(this.current_page, false); //remove selected from old page
-		this.update_selected_sidebar(page, true); //add selected on new page
-		this.show_page(page);
-	}
+		// Only update sidebar selection first
+		this.update_selected_sidebar(this.current_page, false);
+		this.update_selected_sidebar(page, true);
 
+		// Show the page first, title will be set inside show_page()
+		this.show_page(page);
+
+
+	}
 	update_selected_sidebar(page, add) {
 		let section = page.public ? "public" : "private";
 		if (
@@ -420,6 +436,9 @@ frappe.views.Workspace = class Workspace {
 	}
 
 	async show_page(page) {
+		// Set the title here - FIRST thing when showing the page
+		this.page.set_title(__(page.name));
+
 		if (!this.body.find("#editorjs")[0]) {
 			$(`
 				<div id="editorjs" class="desk-page page-main-content"></div>

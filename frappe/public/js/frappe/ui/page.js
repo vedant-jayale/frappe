@@ -27,6 +27,7 @@ frappe.ui.pages = {};
 
 frappe.ui.Page = class Page {
 	constructor(opts) {
+		this.title_initialized = false;
 		$.extend(this, opts);
 
 		this.set_document_title = true;
